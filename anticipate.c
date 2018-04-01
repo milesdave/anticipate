@@ -14,10 +14,12 @@ const int COLOUR_WINDOW_ID = 1;
 const int COLOUR_SHADOW_ID = 2;
 const int WINDOW_WIDTH = 55;
 const int WINDOW_HEIGHT = 9;
+const char* IN_TEXT = "- in -";
 
 void usage(void);
 void setupNcurses(void);
 WINDOW* createWindow(void);
+void shadow(const WINDOW* window);
 
 int main(int argc, char* argv[])
 {
@@ -43,6 +45,12 @@ int main(int argc, char* argv[])
 	WINDOW* window = createWindow();
 	bool quit = false;
 
+	int messageLength = strlen(argv[2]);
+	int messageX = (WINDOW_WIDTH / 2) - (messageLength / 2);
+
+	int inLength = strlen(IN_TEXT);
+	int inX = (WINDOW_WIDTH / 2) - (inLength / 2);
+
 	while(!quit)
 	{
 		time_t now = time(NULL);
@@ -62,7 +70,13 @@ int main(int argc, char* argv[])
 		snprintf(countdownText, MAX_CHARS, "%d %s, %d %s, %d %s and %d %s",
 			days, dayStr, hours, hourStr, minutes, minStr, seconds, secStr);
 
-		mvwprintw(window, 5, 5, countdownText);
+		int countdownLength = strlen(countdownText);
+		int countdownX = (WINDOW_WIDTH / 2) - (countdownLength / 2);
+		int countdownY = (WINDOW_HEIGHT / 2) + 1;
+
+		mvwprintw(window, countdownY - 2, messageX, argv[2]);
+		mvwprintw(window, countdownY - 1, inX, IN_TEXT);
+		mvwprintw(window, countdownY, countdownX, countdownText);
 
 		refresh();
 		wrefresh(window);
@@ -111,8 +125,8 @@ WINDOW* createWindow(void)
 	int termHeight;
 	getmaxyx(stdscr, termHeight, termWidth);
 
-	int windowX = termWidth / 2 - (WINDOW_WIDTH / 2);
-	int windowY = termHeight / 2 - (WINDOW_HEIGHT / 2);
+	int windowX = (termWidth / 2) - (WINDOW_WIDTH / 2);
+	int windowY = (termHeight / 2) - (WINDOW_HEIGHT / 2);
 
 	WINDOW* window = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, windowY, windowX);
 	box(window, 0, 0);
@@ -120,4 +134,19 @@ WINDOW* createWindow(void)
 	wrefresh(window);
 
 	return window;
+}
+
+void shadow(const WINDOW* window)
+{
+	int winWidth;
+	int winHeight;
+	int winX;
+	int winY;
+
+	getmaxyx(window, winWidth, winHeight);
+	getbegyx(window, winY, winX);
+
+	mvchgat(winY + winHeight, winX + 1, winWidth, A_NORMAL, COLOUR_SHADOW_ID, NULL);
+	for(int i = 0; i < winHeight - 1; i++)
+		mvchgat(winY + i + 1, winX + winWidth, 1, A_NORMAL, COLOUR_SHADOW_ID, NULL);
 }
