@@ -1,7 +1,7 @@
 EXE = anticipate
 
 CC = gcc
-CFLAGS = -std=c99 -Wall -Wextra -Werror -pedantic
+CFLAGS = -std=c99 -Wall -Wextra -pedantic
 LDLIBS = -lncurses
 
 RM = rm -f
