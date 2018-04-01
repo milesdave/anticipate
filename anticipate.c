@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 typedef struct tm tm_t;
 
@@ -40,6 +41,38 @@ int main(int argc, char* argv[])
 
 	setupNcurses();
 	WINDOW* window = createWindow();
+	bool quit = false;
+
+	while(!quit)
+	{
+		time_t now = time(NULL);
+		time_t secondsToTarget = difftime(targetTimeSec, now);
+
+		int seconds = secondsToTarget % 60;
+		int minutes = (secondsToTarget % 3600) / 60;
+		int hours = (secondsToTarget % 86400) / 3600;
+		int days = (secondsToTarget % (86400 * 30)) / 86400;
+
+		char* dayStr = days == 1 ? "day" : "days";
+		char* hourStr = hours == 1 ? "hour" : "hours";
+		char* minStr = minutes == 1 ? "minute" : "minutes";
+		char* secStr = seconds == 1 ? "second" : "seconds";
+
+		char countdownText[MAX_CHARS];
+		snprintf(countdownText, MAX_CHARS, "%d %s, %d %s, %d %s and %d %s",
+			days, dayStr, hours, hourStr, minutes, minStr, seconds, secStr);
+
+		mvwprintw(window, 5, 5, countdownText);
+
+		refresh();
+		wrefresh(window);
+
+		sleep(1);
+
+		int userInput = getch();
+		if(userInput == 'q')
+			quit = true;
+	}
 
 	delwin(window);
 	endwin();
