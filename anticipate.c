@@ -43,7 +43,6 @@ int main(int argc, char* argv[])
 
 	setupNcurses();
 	WINDOW* window = createWindow();
-	bool quit = false;
 
 	int messageLength = strlen(argv[2]);
 	int messageX = (WINDOW_WIDTH / 2) - (messageLength / 2);
@@ -51,6 +50,10 @@ int main(int argc, char* argv[])
 	int inLength = strlen(IN_TEXT);
 	int inX = (WINDOW_WIDTH / 2) - (inLength / 2);
 
+	int lastCountdownLength = 0;
+	int lastCountdownX = 0;
+
+	bool quit = false;
 	while(!quit)
 	{
 		time_t now = time(NULL);
@@ -74,9 +77,17 @@ int main(int argc, char* argv[])
 		int countdownX = (WINDOW_WIDTH / 2) - (countdownLength / 2);
 		int countdownY = (WINDOW_HEIGHT / 2) + 1;
 
+		// This erases the previous countdown line, which is needed because the
+		// new line can be smaller and leave behind characters from the previous.
+		for(int i = 0; i < lastCountdownLength; i++)
+			mvwprintw(window, countdownY, lastCountdownX + i, " ");
+
 		mvwprintw(window, countdownY - 2, messageX, argv[2]);
 		mvwprintw(window, countdownY - 1, inX, IN_TEXT);
 		mvwprintw(window, countdownY, countdownX, countdownText);
+
+		lastCountdownLength = countdownLength;
+		lastCountdownX = countdownX;
 
 		refresh();
 		wrefresh(window);
