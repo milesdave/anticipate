@@ -9,17 +9,25 @@
 
 typedef struct tm tm_t;
 
+typedef struct vector2
+{
+	int x;
+	int y;
+} vector2_t;
+
 const int MAX_CHARS = 256;
 const int COLOUR_WINDOW_ID = 1;
 const int COLOUR_SHADOW_ID = 2;
 const int WINDOW_WIDTH = 55;
 const int WINDOW_HEIGHT = 9;
+const int UPDATES_BEFORE_MOVE = 2;
 const char* IN_TEXT = "- in -";
 
 void usage(void);
 void setupNcurses(void);
 WINDOW* createWindow(void);
-void shadow(const WINDOW* window);
+void moveWindow(WINDOW* window, vector2_t* direction);
+int randInRange(int min, int max);
 
 int main(int argc, char* argv[])
 {
@@ -41,6 +49,7 @@ int main(int argc, char* argv[])
 
 	targetTimeSec = mktime(&targetTime);
 
+	srand(time(NULL));
 	setupNcurses();
 	WINDOW* window = createWindow();
 
@@ -52,6 +61,11 @@ int main(int argc, char* argv[])
 
 	int lastCountdownLength = 0;
 	int lastCountdownX = 0;
+
+	int updates = 0;
+	vector2_t winDir;
+	winDir.x = 1;
+	winDir.y = 1;
 
 	bool quit = false;
 	while(!quit)
@@ -88,6 +102,13 @@ int main(int argc, char* argv[])
 
 		lastCountdownLength = countdownLength;
 		lastCountdownX = countdownX;
+
+		updates++;
+		if(updates == UPDATES_BEFORE_MOVE)
+		{
+			moveWindow(window, &winDir);
+			updates = 0;
+		}
 
 		refresh();
 		wrefresh(window);
@@ -136,29 +157,61 @@ WINDOW* createWindow(void)
 	int termHeight;
 	getmaxyx(stdscr, termHeight, termWidth);
 
-	int windowX = (termWidth / 2) - (WINDOW_WIDTH / 2);
-	int windowY = (termHeight / 2) - (WINDOW_HEIGHT / 2);
+	int windowX = randInRange(0, termWidth - WINDOW_WIDTH);
+	int windowY = randInRange(0, termHeight - WINDOW_HEIGHT);
 
 	WINDOW* window = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, windowY, windowX);
 	box(window, 0, 0);
 	wbkgd(window, COLOR_PAIR(COLOUR_WINDOW_ID));
-	shadow(window);
 	wrefresh(window);
 
 	return window;
 }
 
-void shadow(const WINDOW* window)
+void moveWindow(WINDOW* window, vector2_t* direction)
 {
-	int winWidth;
-	int winHeight;
 	int winX;
 	int winY;
-
-	getmaxyx(window, winHeight, winWidth);
 	getbegyx(window, winY, winX);
 
-	mvchgat(winY + winHeight, winX + 1, winWidth, A_NORMAL, COLOUR_SHADOW_ID, NULL);
-	for(int i = 0; i < winHeight - 1; i++)
-		mvchgat(winY + i + 1, winX + winWidth, 1, A_NORMAL, COLOUR_SHADOW_ID, NULL);
+	int newX = winX + direction->x;
+	int newY = winY + direction->y;
+
+	if((mvwin(window, newY, newX)) != 0)
+	{
+		int termW;
+		int termH;
+		getmaxyx(stdscr, termH, termW);
+
+		int winW;
+		int winH;
+		getmaxyx(window, winH, winW);
+
+		// The window went off the terminal to the left
+		if(newX < 0)
+		{
+			direction->x = 1;
+		}
+		// The window went off the terminal to the right.
+		else if(newX + winW > termW)
+		{
+			direction->x = -1;
+		}
+
+		// The window went off the terminal to the top.
+		if(newY < 0)
+		{
+			direction->y = 1;
+		}
+		// The window went off the terminal to the bottom.
+		else if(newY + winH > termH)
+		{
+			direction->y = -1;
+		}
+	}
+}
+
+int randInRange(int min, int max)
+{
+	return min + rand() / (RAND_MAX / (max - min + 1) + 1);
 }
