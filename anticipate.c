@@ -142,6 +142,7 @@ WINDOW* createWindow(void)
 	WINDOW* window = newwin(WINDOW_HEIGHT, WINDOW_WIDTH, windowY, windowX);
 	box(window, 0, 0);
 	wbkgd(window, COLOR_PAIR(COLOUR_WINDOW_ID));
+	shadow(window);
 	wrefresh(window);
 
 	return window;
@@ -154,7 +155,7 @@ void shadow(const WINDOW* window)
 	int winX;
 	int winY;
 
-	getmaxyx(window, winWidth, winHeight);
+	getmaxyx(window, winHeight, winWidth);
 	getbegyx(window, winY, winX);
 
 	mvchgat(winY + winHeight, winX + 1, winWidth, A_NORMAL, COLOUR_SHADOW_ID, NULL);
