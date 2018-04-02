@@ -20,7 +20,6 @@ const int COLOUR_WINDOW_ID = 1;
 const int COLOUR_SHADOW_ID = 2;
 const int WINDOW_WIDTH = 55;
 const int WINDOW_HEIGHT = 9;
-const int UPDATES_BEFORE_MOVE = 2;
 const char* IN_TEXT = "- in -";
 
 void usage(void);
@@ -62,7 +61,6 @@ int main(int argc, char* argv[])
 	int lastCountdownLength = 0;
 	int lastCountdownX = 0;
 
-	int updates = 0;
 	vector2_t winDir;
 	winDir.x = 1;
 	winDir.y = 1;
@@ -73,10 +71,10 @@ int main(int argc, char* argv[])
 		time_t now = time(NULL);
 		time_t secondsToTarget = difftime(targetTimeSec, now);
 
-		int seconds = secondsToTarget % 60;
-		int minutes = (secondsToTarget % 3600) / 60;
-		int hours = (secondsToTarget % 86400) / 3600;
-		int days = (secondsToTarget % (86400 * 30)) / 86400;
+		int seconds = secondsToTarget % 60; secondsToTarget /= 60;
+		int minutes = secondsToTarget % 60; secondsToTarget /= 60;
+		int hours = secondsToTarget % 24; secondsToTarget /= 24;
+		int days = secondsToTarget;
 
 		char* dayStr = days == 1 ? "day" : "days";
 		char* hourStr = hours == 1 ? "hour" : "hours";
@@ -96,19 +94,20 @@ int main(int argc, char* argv[])
 		for(int i = 0; i < lastCountdownLength; i++)
 			mvwprintw(window, countdownY, lastCountdownX + i, " ");
 
+		wattron(window, A_BOLD);
 		mvwprintw(window, countdownY - 2, messageX, argv[2]);
+		wattroff(window, A_BOLD);
+
 		mvwprintw(window, countdownY - 1, inX, IN_TEXT);
+
+		wattron(window, A_BOLD);
 		mvwprintw(window, countdownY, countdownX, countdownText);
+		wattroff(window, A_BOLD);
 
 		lastCountdownLength = countdownLength;
 		lastCountdownX = countdownX;
 
-		updates++;
-		if(updates == UPDATES_BEFORE_MOVE)
-		{
-			moveWindow(window, &winDir);
-			updates = 0;
-		}
+		moveWindow(window, &winDir);
 
 		refresh();
 		wrefresh(window);
@@ -139,10 +138,8 @@ void setupNcurses(void)
 {
 	initscr();
 	start_color();
-	use_default_colors();
 	curs_set(0);
 	cbreak();
-	keypad(stdscr, true);
 	noecho();
 	nodelay(stdscr, true);
 	refresh();
@@ -177,7 +174,7 @@ void moveWindow(WINDOW* window, vector2_t* direction)
 	int newX = winX + direction->x;
 	int newY = winY + direction->y;
 
-	if((mvwin(window, newY, newX)) != 0)
+	while((mvwin(window, newY, newX)) != 0)
 	{
 		int termW;
 		int termH;
@@ -187,27 +184,18 @@ void moveWindow(WINDOW* window, vector2_t* direction)
 		int winH;
 		getmaxyx(window, winH, winW);
 
-		// The window went off the terminal to the left
 		if(newX < 0)
-		{
 			direction->x = 1;
-		}
-		// The window went off the terminal to the right.
 		else if(newX + winW > termW)
-		{
 			direction->x = -1;
-		}
 
-		// The window went off the terminal to the top.
 		if(newY < 0)
-		{
 			direction->y = 1;
-		}
-		// The window went off the terminal to the bottom.
 		else if(newY + winH > termH)
-		{
 			direction->y = -1;
-		}
+
+		newX = winX + direction->x;
+		newY = winY + direction->y;
 	}
 }
 
